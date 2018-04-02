@@ -1,5 +1,11 @@
 #!/usr/bin/env python
 
+""" Class definition for Temporal TF-IDF object. Provides term-weighting a la
+TF-IDF but for a collection of documents produced over time, i.e., associated
+with some date.
+"""
+
+from collections import Counter
 import os
 import re
 
@@ -8,7 +14,7 @@ STOPWORDS = set(map(str.strip, open(os.path.join(FILE, 'stopwords')).readlines()
 
 class TempoTFIDF(object):
     """ Python object for generating term weight for a set of documents
-    produced over time, i.e., temporal TF-IDF scores.
+    produced over time, i.e.:, temporal TF-IDF scores.
 
     Parameters
     ----------
@@ -42,15 +48,14 @@ class TempoTFIDF(object):
 
     def __init__(self, documents, dates, date_format='%Y-%m-%d',
                  time_unit='month', stopwords=None, max_font_size=None,
-                 word_regexp=None, colocations=False):
+                 word_regexp=None, collocations=False):
         self.documents = documents
         self.dates = dates
         self.date_format = date_format
         self.time_unit = time_unit
         self.stopwords = stopwords if stopwords is not None else STOPWORDS
         self.max_font_size = max_font_size
-        self.word_regexp = word_regexp if word_regexp is not None
-                                                            else r'\w[\w']+'
+        self.word_regexp = word_regexp if word_regexp is not None else r"\w[\w']+"
         self.collocations = collocations
 
     def score_documents(self):
@@ -67,9 +72,12 @@ class TempoTFIDF(object):
                 {'wrong': 4.343,
                  'two': 1.34}}
         """
-        clean_docs = [self.process_text(doc) for doc in self.documents]
-        frequencies = self.calculate_frequencies(clean_docs)
-        return self.generate_from_frequencies(frequencies)
+        doc_tokens = [self.process_text(doc) for doc in self.documents]
+        doc_freqs = [self.calculate_word_frequencies(t) for t in tokens]
+
+        collection_tokens = [token for doc in doc_tokens for token in doc]
+        collection_freqs = self.calculate_word_frequencies(collection_tokens)
+        return self.generate_from_frequencies(doc_freqs, collection_freqs)
 
     def process_text(self, document):
         """ Preprocesses a document into a clean list of tokens. Removes
@@ -87,16 +95,54 @@ class TempoTFIDF(object):
         Returns
         -------
         List of tokens
+        """
+        stopwords = set([w.lower() for w in STOPWORDS])
+        word_def = r"\w[\w']+"
+        words = re.findall(word_def, document, 0)
+        words = [w.lower() for w in words if w.lower() not in stopwords]
+        words = [w[:2] if w.endswith("'s") else w for w in words]
+        words = [w for w in words if not w.isdigit()]
+        return words
 
+    def calculate_word_frequencies(self, tokens):
+        """ Counts occurances of tokens in list of tokens.
+
+        Parameters
+        ----------
+        tokens : list
+            List of strings (tokens) to tabulate
+
+        Returns
+        -------
+        Dictionary of tokenss and corresponding counts
+        """
+        return dict(Counter(tokens))
+
+    def generate_from_frequencies(self, document_frequencies,
+                                        collection_frequencies):
+        """
         """
         pass
 
-    def calculate_frequencies(self, documents):
-        """
-        """
-        pass
 
-    def generate_from_frequencies(frequencies):
-        """
-        """
-        pass
+if __name__ == '__main__':
+
+    docs = ['While troubleshooting HIVE performance issues when TEZ engine is being used there may be a need to increase the number of mappers used during a query.', 'In Monday\'s damp predawn darkness, teachers gathered in front of Muskogee High. But instead of heading to their classrooms, they piled on to a bus painted with the schoo\'s mascot the Roughers and headed 150 miles west to Oklahoma City.', 'In this query, you can create dimensions from customer_id and lifetime_spend. However, suppose you wanted the user to be able to specify the region, instead of hard-coding it to "northeast". The region cannot be exposed as a dimension, and therefore the user cannot filter on it as normal.']
+
+    dts = ['2018-01-01', '2018-02-01', '2018-03-01']
+
+    scorer = TempoTFIDF(documents=docs, dates=dts, time_unit='month')
+
+    tokens = [scorer.process_text(doc) for doc in docs]
+
+    docs_freq = [scorer.calculate_word_frequencies(doc) for doc in tokens]
+
+    all_docs = ' '.join(docs)
+    all_docs_tokens = scorer.process_text(all_docs)
+    all_docs_freq = scorer.calculate_word_frequencies(all_docs_tokens)
+
+    #print(docs_freq)
+    #print(all_docs_freq)
+
+    scores = scorer.generate_from_frequencies(docs_freq, all_docs_freq)
+    print(scores)
