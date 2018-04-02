@@ -7,8 +7,17 @@ with some date.
 TODO
 ----
 - Add functions to collocation=True feature.
-- generate_from_frequencies -- add function to convert dates to date_unit
-    and then sort doc_frequencies appropriately.
+- score_documents -- add function to convert dates to date_unit before
+  calculating frequencies, something like:
+      # documents contains the list of documents
+      original_dates = set(dates)
+      transformed_dates = [get_date(x, 'month') for x in dates]
+      transformed_tokens = dict{}
+      for x, i in documents.index():
+          transformed = transformed_dates[i]
+          transformed_tokens[i].append(x)
+      final_text = {k: ' '.join(v) for k,v in transformed_tokens.iteritems()}
+
 
 """
 
@@ -80,6 +89,16 @@ class TempoTFIDF(object):
                 {'wrong': 4.343,
                  'two': 1.34}}
         """
+        if time_unit = 'day':
+            print('day')
+        elif time_unit = 'month':
+            print('month')
+        elif time_unit = 'year':
+            print('year')
+        else:
+            print('Please select a valid time unit: day, month, year')
+            break
+
         doc_tokens = [self.process_text(doc) for doc in self.documents]
         doc_freqs = [self.calculate_word_frequencies(t) for t in tokens]
 
@@ -162,14 +181,11 @@ class TempoTFIDF(object):
         -------
         List of dicts, each dict corresponding to an input document
 
-            {'document1':
-                {'taste': 5.9808,
-                 'better': 3.34},
-             'document2':
-                {'wrong': 4.343,
-                 'two': 1.34}}
+            [{'taste': 5.980538, 'better': 3.3423432},  # document 1
+             {'wrong': 4.343234, 'two': 1.34234234}}    # document 2
         """
         documents_scores = []
+
         for document in document_frequencies:
             document_scores = dict()
             for k in document.keys():
@@ -178,6 +194,7 @@ class TempoTFIDF(object):
                 s = abs(f_w_t * if_w)
                 document_scores[k] = s
             documents_scores.append(document_scores)
+
         return documents_scores
 
 
