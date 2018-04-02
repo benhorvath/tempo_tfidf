@@ -3,14 +3,23 @@
 """ Class definition for Temporal TF-IDF object. Provides term-weighting a la
 TF-IDF but for a collection of documents produced over time, i.e., associated
 with some date.
+
+TODO
+----
+- Add functions to collocation=True feature.
+- generate_from_frequencies -- add function to convert dates to date_unit
+    and then sort doc_frequencies appropriately.
+
 """
 
 from collections import Counter
+import math
 import os
 import re
 
 FILE = os.path.dirname(__file__)
-STOPWORDS = set(map(str.strip, open(os.path.join(FILE, 'stopwords')).readlines()))
+STOPWORDS = set([w.strip() for w in open(os.path.join(FILE,
+    'stopwords')).readlines()])
 
 class TempoTFIDF(object):
     """ Python object for generating term weight for a set of documents
@@ -18,19 +27,6 @@ class TempoTFIDF(object):
 
     Parameters
     ----------
-    documents : list
-        Documents to be analyzed.
-
-    dates : list
-        Dates associated with each document. len(documents) must equal
-        len(documents).
-
-    date_format : str (default='%Y-%m-%d')
-        Formatting of dates in dates parameter.
-
-    time_unit : str (default='month')
-        The time unit to compare term weight over. Accepts day, month, or year.
-
     stopwords : str (default=None)
         File path to custom stopwords document, with each stopword on its own
         line seperated by a newline \\n. If left blank, will use a default set
@@ -46,20 +42,32 @@ class TempoTFIDF(object):
         Whether to include bigrams in weighting.
     """
 
-    def __init__(self, documents, dates, date_format='%Y-%m-%d',
-                 time_unit='month', stopwords=None, max_font_size=None,
-                 word_regexp=None, collocations=False):
-        self.documents = documents
-        self.dates = dates
-        self.date_format = date_format
-        self.time_unit = time_unit
+    def __init__(self, stopwords=None, max_font_size=None, word_regexp=None,
+                 collocations=False):
         self.stopwords = stopwords if stopwords is not None else STOPWORDS
         self.max_font_size = max_font_size
         self.word_regexp = word_regexp if word_regexp is not None else r"\w[\w']+"
         self.collocations = collocations
 
-    def score_documents(self):
+    def score_documents(self, documents, dates, date_format='%Y-%m-%d',
+                        time_unit='month'):
         """ Clean document text and produce term weights.
+
+        Parameters
+        ----------
+        documents : list
+            Documents to be analyzed.
+
+        dates : list
+            Dates associated with each document. len(documents) must equal
+            len(documents).
+
+        date_format : str (default='%Y-%m-%d')
+             Formatting of dates in dates parameter.
+
+        time_unit : str (default='month')
+            The time unit to compare term weight over. Accepts day, month, or
+            year.
 
         Returns
         -------
@@ -119,10 +127,58 @@ class TempoTFIDF(object):
         return dict(Counter(tokens))
 
     def generate_from_frequencies(self, document_frequencies,
-                                        collection_frequencies):
+                                  collection_frequencies, dates,
+                                  date_format='%Y-%m-%d', date_unit='month'):
+        """ Generates the temporal TF-IDF scores for each document-term dyad
+        in the collection of documents.
+
+        TODO: Describe the formula.
+
+        TODO
+        ----
+        - Add date_unit functionality
+
+        parameters
+        ----------
+        document_frequencies : list
+            A list of document-term frequencies, as dicts like {'word': 2},
+            each list element corresponding to an input document.
+
+        collection_frequencies : dict
+            Token frequency for the collection of documents like {'word': 2}.
+
+        dates : list
+            Dates associated with each document. len(dates) must equal
+            len(documents).
+
+        date_format : str (default='%Y-%m-%d')
+             Formatting of dates in dates parameter.
+
+        time_unit : str (default='month')
+            The time unit to compare term weight over. Accepts day, month, or
+            year.
+
+        Returns
+        -------
+        List of dicts, each dict corresponding to an input document
+
+            {'document1':
+                {'taste': 5.9808,
+                 'better': 3.34},
+             'document2':
+                {'wrong': 4.343,
+                 'two': 1.34}}
         """
-        """
-        pass
+        documents_scores = []
+        for document in document_frequencies:
+            document_scores = dict()
+            for k in document.keys():
+                f_w_t = document[k]
+                if_w = math.log( 1 / float(collection_frequencies[k]))
+                s = abs(f_w_t * if_w)
+                document_scores[k] = s
+            documents_scores.append(document_scores)
+        return documents_scores
 
 
 if __name__ == '__main__':
@@ -131,7 +187,9 @@ if __name__ == '__main__':
 
     dts = ['2018-01-01', '2018-02-01', '2018-03-01']
 
-    scorer = TempoTFIDF(documents=docs, dates=dts, time_unit='month')
+    #scorer = TempoTFIDF(documents=docs, dates=dts, time_unit='month')
+
+    scorer = TempoTFIDF()
 
     tokens = [scorer.process_text(doc) for doc in docs]
 
@@ -144,5 +202,5 @@ if __name__ == '__main__':
     #print(docs_freq)
     #print(all_docs_freq)
 
-    scores = scorer.generate_from_frequencies(docs_freq, all_docs_freq)
+    scores = scorer.generate_from_frequencies(docs_freq, all_docs_freq, dts)
     print(scores)
