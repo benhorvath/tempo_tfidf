@@ -7,21 +7,12 @@ with some date.
 TODO
 ----
 - Add functions to collocation=True feature.
-- score_documents -- add function to convert dates to date_unit before
-  calculating frequencies, something like:
-      # documents contains the list of documents
-      original_dates = set(dates)
-      transformed_dates = [get_date(x, 'month') for x in dates]
-      transformed_tokens = dict{}
-      for x, i in documents.index():
-          transformed = transformed_dates[i]
-          transformed_tokens[i].append(x)
-      final_text = {k: ' '.join(v) for k,v in transformed_tokens.iteritems()}
-
+- Need to fit dates function better into generate_from_frequencies()
 
 """
 
 from collections import Counter
+from datetime import datetime
 import math
 import os
 import re
@@ -60,7 +51,7 @@ class TempoTFIDF(object):
 
     def score_documents(self, documents, dates, date_format='%Y-%m-%d',
                         time_unit='month'):
-        """ Clean document text and produce term weights.
+        """ Clean document text and produces term weights by date.
 
         Parameters
         ----------
@@ -82,29 +73,31 @@ class TempoTFIDF(object):
         -------
         dict of dicts like:
 
-            {'document1':
+            {'April 2018':
                 {'taste': 5.9808,
                  'better': 3.34},
-             'document2':
+             'May 2018':
                 {'wrong': 4.343,
                  'two': 1.34}}
         """
-        if time_unit = 'day':
-            print('day')
-        elif time_unit = 'month':
-            print('month')
-        elif time_unit = 'year':
-            print('year')
-        else:
-            print('Please select a valid time unit: day, month, year')
-            break
 
-        doc_tokens = [self.process_text(doc) for doc in self.documents]
-        doc_freqs = [self.calculate_word_frequencies(t) for t in tokens]
+        # Aggregate documents according to time_unit
+        aggr_dates = [self.extract_date(d, time_unit, date_format=date_format) for d in dates]
+        aggr_docs = {}
+        for i, doc in enumerate(documents):
+            dt = aggr_dates[i]
+            if dt not in aggr_docs:
+                aggr_docs[dt] = []
+            aggr_docs[dt].append(doc)
+        time_docs = {k: ' '.join(aggr_docs[k]) for k in aggr_docs.keys()}
+
+        # Calculate frequencies
+        doc_tokens = [self.process_text(time_docs[k]) for k in time_docs.keys()]
+        doc_freqs = [self.calculate_word_frequencies(t) for t in doc_tokens]
 
         collection_tokens = [token for doc in doc_tokens for token in doc]
         collection_freqs = self.calculate_word_frequencies(collection_tokens)
-        return self.generate_from_frequencies(doc_freqs, collection_freqs)
+        return self.generate_from_frequencies(doc_freqs, collection_freqs, aggr_dates)
 
     def process_text(self, document):
         """ Preprocesses a document into a clean list of tokens. Removes
@@ -197,27 +190,50 @@ class TempoTFIDF(object):
 
         return documents_scores
 
+    @staticmethod
+    def extract_date(d, part, date_format='%Y-%m-%d'):
+        """ Extracts a date part from a date as a string. Can select week, month, or year."""
+        dt = datetime.strptime(d, date_format)
+
+        if part == 'week':
+            return dt.strftime('w%U %Y')
+        elif part == 'month':
+            return dt.strftime('%B %Y')
+        elif part == 'year':
+            return dt.strftime('%Y')
+        else:
+            msg = 'Valid date part options are week, month, and year'
+            raise ValueError(msg)
+
 
 if __name__ == '__main__':
 
     docs = ['While troubleshooting HIVE performance issues when TEZ engine is being used there may be a need to increase the number of mappers used during a query.', 'In Monday\'s damp predawn darkness, teachers gathered in front of Muskogee High. But instead of heading to their classrooms, they piled on to a bus painted with the schoo\'s mascot the Roughers and headed 150 miles west to Oklahoma City.', 'In this query, you can create dimensions from customer_id and lifetime_spend. However, suppose you wanted the user to be able to specify the region, instead of hard-coding it to "northeast". The region cannot be exposed as a dimension, and therefore the user cannot filter on it as normal.']
 
-    dts = ['2018-01-01', '2018-02-01', '2018-03-01']
 
-    #scorer = TempoTFIDF(documents=docs, dates=dts, time_unit='month')
+    dts = ['2018-01-01', '2018-01-02', '2018-02-01']
 
     scorer = TempoTFIDF()
+    x = scorer.score_documents(docs, dts,time_unit='month')
 
-    tokens = [scorer.process_text(doc) for doc in docs]
+    # docs = ['While troubleshooting HIVE performance issues when TEZ engine is being used there may be a need to increase the number of mappers used during a query.', 'In Monday\'s damp predawn darkness, teachers gathered in front of Muskogee High. But instead of heading to their classrooms, they piled on to a bus painted with the schoo\'s mascot the Roughers and headed 150 miles west to Oklahoma City.', 'In this query, you can create dimensions from customer_id and lifetime_spend. However, suppose you wanted the user to be able to specify the region, instead of hard-coding it to "northeast". The region cannot be exposed as a dimension, and therefore the user cannot filter on it as normal.']
 
-    docs_freq = [scorer.calculate_word_frequencies(doc) for doc in tokens]
+    # dts = ['2018-01-01', '2018-02-01', '2018-03-01']
 
-    all_docs = ' '.join(docs)
-    all_docs_tokens = scorer.process_text(all_docs)
-    all_docs_freq = scorer.calculate_word_frequencies(all_docs_tokens)
+    # #scorer = TempoTFIDF(documents=docs, dates=dts, time_unit='month')
 
-    #print(docs_freq)
-    #print(all_docs_freq)
+    # scorer = TempoTFIDF()
 
-    scores = scorer.generate_from_frequencies(docs_freq, all_docs_freq, dts)
-    print(scores)
+    # tokens = [scorer.process_text(doc) for doc in docs]
+
+    # docs_freq = [scorer.calculate_word_frequencies(doc) for doc in tokens]
+
+    # all_docs = ' '.join(docs)
+    # all_docs_tokens = scorer.process_text(all_docs)
+    # all_docs_freq = scorer.calculate_word_frequencies(all_docs_tokens)
+
+    # print(docs_freq)
+    # #print(all_docs_freq)
+
+    # scores = scorer.generate_from_frequencies(docs_freq, all_docs_freq, dts)
+    # #print(scores)
