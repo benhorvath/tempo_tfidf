@@ -7,7 +7,9 @@ with some date.
 TODO
 ----
 - Add functions to collocation=True feature.
-- Need to fit dates function better into generate_from_frequencies()
+- Visualize() function -- move viz options from init to this function
+- singularize function in process_words?
+- Double check documentation
 
 """
 
@@ -89,13 +91,16 @@ class TempoTFIDF(object):
             if dt not in aggr_docs:
                 aggr_docs[dt] = []
             aggr_docs[dt].append(doc)
-        time_docs = {k: ' '.join(aggr_docs[k]) for k in aggr_docs.keys()}
+        time_docs = {k: ' '.join(v) for k,v in aggr_docs.items()}
 
-        # Calculate frequencies
-        doc_tokens = [self.process_text(time_docs[k]) for k in time_docs.keys()]
-        doc_freqs = [self.calculate_word_frequencies(t) for t in doc_tokens]
+        doc_tokens = {k: self.process_text(v) for k,v in time_docs.items()}
+        doc_freqs = {k: self.calculate_word_frequencies(v) for k,v in doc_tokens.items()}
 
-        collection_tokens = [token for doc in doc_tokens for token in doc]
+        # Calculate document collection frequencies
+        collection_tokens = []
+        for k,v in doc_tokens.items():
+            for i in v:
+                collection_tokens.append(i)
         collection_freqs = self.calculate_word_frequencies(collection_tokens)
         return self.generate_from_frequencies(doc_freqs, collection_freqs, aggr_dates)
 
@@ -172,23 +177,38 @@ class TempoTFIDF(object):
 
         Returns
         -------
-        List of dicts, each dict corresponding to an input document
+        Dict corresponding to input documents and their dates
 
-            [{'taste': 5.980538, 'better': 3.3423432},  # document 1
-             {'wrong': 4.343234, 'two': 1.34234234}}    # document 2
+            {'February 2015': {'taste': 5.980538, 'better': 3.3423432},
+             'March 2015': {'wrong': 4.343234, 'two': 1.34234234}}
         """
-        documents_scores = []
+        documents_scores = {}
 
-        for document in document_frequencies:
+        for k,v in document_frequencies.items():
             document_scores = dict()
-            for k in document.keys():
-                f_w_t = document[k]
-                if_w = math.log( 1 / float(collection_frequencies[k]))
-                s = abs(f_w_t * if_w)
-                document_scores[k] = s
-            documents_scores.append(document_scores)
+            for token in v:
+                f_w_t = v[token]
+                if_w = math.log ( 1 / float(collection_frequencies[token]) )
+                s = f_w_t * if_w
+                document_scores[token] = s
+            documents_scores[k] = document_scores
 
+        self.documents_scores = documents_scores
         return documents_scores
+
+    def visualize(self, document_scores, path='visualize.html'):
+        """ Produces an HTML file to visualize change over time.
+
+        Parameters
+        ----------
+        document_scores : dict
+            Output of self.score_documents
+
+        Returns
+        -------
+        Saves an HTML file to path
+        """
+        pass
 
     @staticmethod
     def extract_date(d, part, date_format='%Y-%m-%d'):
@@ -214,26 +234,6 @@ if __name__ == '__main__':
     dts = ['2018-01-01', '2018-01-02', '2018-02-01']
 
     scorer = TempoTFIDF()
-    x = scorer.score_documents(docs, dts,time_unit='month')
-
-    # docs = ['While troubleshooting HIVE performance issues when TEZ engine is being used there may be a need to increase the number of mappers used during a query.', 'In Monday\'s damp predawn darkness, teachers gathered in front of Muskogee High. But instead of heading to their classrooms, they piled on to a bus painted with the schoo\'s mascot the Roughers and headed 150 miles west to Oklahoma City.', 'In this query, you can create dimensions from customer_id and lifetime_spend. However, suppose you wanted the user to be able to specify the region, instead of hard-coding it to "northeast". The region cannot be exposed as a dimension, and therefore the user cannot filter on it as normal.']
-
-    # dts = ['2018-01-01', '2018-02-01', '2018-03-01']
-
-    # #scorer = TempoTFIDF(documents=docs, dates=dts, time_unit='month')
-
-    # scorer = TempoTFIDF()
-
-    # tokens = [scorer.process_text(doc) for doc in docs]
-
-    # docs_freq = [scorer.calculate_word_frequencies(doc) for doc in tokens]
-
-    # all_docs = ' '.join(docs)
-    # all_docs_tokens = scorer.process_text(all_docs)
-    # all_docs_freq = scorer.calculate_word_frequencies(all_docs_tokens)
-
-    # print(docs_freq)
-    # #print(all_docs_freq)
-
-    # scores = scorer.generate_from_frequencies(docs_freq, all_docs_freq, dts)
-    # #print(scores)
+    x = scorer.score_documents(docs, dts,time_unit='week')
+    print(x)
+    
