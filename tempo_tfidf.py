@@ -218,15 +218,47 @@ class TempoTFIDF(object):
             return jinja2.Environment(loader=jinja2.FileSystemLoader(path or
                 './')).get_template(filename).render(context)
 
-        context = {
-            'document_scores': document_scores
-        }
+        score_font_sizes = self.generate_font_sizes(document_scores)
+
+        context = {'score_font_sizes': score_font_sizes}
         result = render('template.html', context)
 
         with open(path, 'w+') as f:
             f.write(result)
 
         print('\nVisualization rendered at %s\n' % path)
+
+    def generate_font_sizes(self, document_scores):
+        """
+        """
+        # d = []
+        # for word, freq in frequencies.items():
+        #     rs = .5  # relative scaling? default is .5 -- exactly balanced between
+        #              # word rank and word frequency
+        #     if last_freq == 0:
+        #         last_freq = 1
+
+        #     font_size = int(round((rs * (freq / float(last_freq)) + (1 - rs)) * font_size))
+        #     last_freq = freq
+        #     d.append((word, freq, font_size))
+        #     print(word, font_size)
+
+        documents_font_sizes = {}
+        for date, scores in document_scores.items():
+            last_freq = 1.
+            max_font_size = 100
+            font_size = max_font_size
+            document_font_sizes = {}
+            for word, score in scores.items():
+                if last_freq == 0.0:
+                    last_freq = 1.0
+                rs = .5
+
+                font_size = int(round((rs * (score / float(last_freq)) + (1 - rs)) * font_size))
+                last_freq = score
+                document_font_sizes[word] = font_size
+            documents_font_sizes[date] = document_font_sizes
+        return documents_font_sizes
 
     @staticmethod
     def extract_date(d, part, date_format='%Y-%m-%d'):
@@ -246,7 +278,8 @@ class TempoTFIDF(object):
 
 if __name__ == '__main__':
 
-    docs = ['While troubleshooting HIVE performance issues when TEZ engine is being used there may be a need to increase the number of mappers used during a query.', 'In Monday\'s damp predawn darkness, teachers gathered in front of Muskogee High. But instead of heading to their classrooms, they piled on to a bus painted with the schoo\'s mascot the Roughers and headed 150 miles west to Oklahoma City.', 'In this query, you can create dimensions from customer_id and lifetime_spend. However, suppose you wanted the user to be able to specify the region, instead of hard-coding it to "northeast". The region cannot be exposed as a dimension, and therefore the user cannot filter on it as normal.']
+
+    docs = ['While troubleshooting HIVE performance issues when TEZ engine is being used there may be a need to increase the number of mappers used during a query.', 'In Monday\'s damp predawn darkness, teachers gathered in front of Muskogee High. But instead of heading to their classrooms, they piled on to a bus painted with the schoo\'s mascot the Roughers and headed 150 miles west to Oklahoma City.', "Tip 1: Partitioning Hive Tables Hive is a powerful tool to perform queries on large data sets and it is particularly good at queries that require full table scans. Yet many queries run on Hive have filtering where clauses limiting the data to be retrieved and processed, e.g. SELECT * WHERE . Hive users tend to have or develop a domain knowledge, understand the data they work with and the queries commonly executed or scheduled. With this knowledge we can identify common data structures that surface in queries. This enables us to identify columns with a (relatively) low cardinality like geographies or dates and high relevance to key queries. For example, common approaches to slice the airline data may be by origin state for reporting purposes. We can utilize this knowledge to organise our data by this information and tell Hive about it. Hive can utilize this knowledge to exclude data from queries before even reading it. Hive tables are linked to directories on HDFS or S3 with files in them interpreted by the meta data stored with Hive. Without partitioning Hive reads all the data in the directory and applies the query filters on it. This is slow and expensive since all data has to be read. In our example a common reports and queries might be generated on an origin state basis. This enables us to define at creation time of the table the state column to be a partition. Consequently, when we write data to the table the data will be written in sub-directories named by state (abbreviations). Subsequently, queries filtering by origin state, e.g. allow Hive to skip all but the relevant sub-directories and data files. This can lead to tremendous reduction in data required to read and "]
 
 
     dts = ['2018-01-01', '2018-01-02', '2018-02-01']
@@ -255,3 +288,5 @@ if __name__ == '__main__':
     doc_scores = scorer.score_documents(docs, dts,time_unit='week')
     print(doc_scores)
     scorer.visualize(doc_scores)
+
+
