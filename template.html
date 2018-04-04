@@ -20,6 +20,14 @@
     <h1>Temporal TF-IDF Visualization</h1>
     <p><a href='github.com/benhorvath/tempo_tfidf'>To Github</a></p>
 
+    {% for date, scores in document_scores.items() %}
+      <h2>{{ date }}</h2>
+      {% for word, score in scores.items() %}
+        <p>{{ word }}</p>
+      {% endfor %}
+      <p></p>
+    {% endfor %}
+
   </body>
 
 </html>

@@ -6,7 +6,6 @@ with some date.
 
 TODO
 ----
-- Add functions to collocation=True feature.
 - Visualize() function -- move viz options from init to this function
 - singularize function in process_words?
 - Double check documentation
@@ -18,6 +17,8 @@ from datetime import datetime
 import math
 import os
 import re
+
+import jinja2
 
 FILE = os.path.dirname(__file__)
 STOPWORDS = set([w.strip() for w in open(os.path.join(FILE,
@@ -84,7 +85,7 @@ class TempoTFIDF(object):
         """
 
         # Aggregate documents according to time_unit
-        aggr_dates = [self.extract_date(d, time_unit, date_format=date_format) for d in dates]
+        aggr_dates = [self.extract_date(d, time_unit) for d in dates]
         aggr_docs = {}
         for i, doc in enumerate(documents):
             dt = aggr_dates[i]
@@ -109,8 +110,7 @@ class TempoTFIDF(object):
         stopwords, punctuation, numbers, and attempts to normalizes plurals
         and other word endings.
 
-        If self.collocations is set to True, will return bigrams as well as
-        unigrams.
+        If self.collocations is set to True, will return bigrams.
 
         Parameters
         ----------
@@ -127,6 +127,8 @@ class TempoTFIDF(object):
         words = [w.lower() for w in words if w.lower() not in stopwords]
         words = [w[:2] if w.endswith("'s") else w for w in words]
         words = [w for w in words if not w.isdigit()]
+        if self.collocations:
+            words = zip(words, words[1:])
         return words
 
     def calculate_word_frequencies(self, tokens):
@@ -208,7 +210,23 @@ class TempoTFIDF(object):
         -------
         Saves an HTML file to path
         """
-        pass
+
+        def render(template_path, context):
+            """ Handles Jinja2 templating, loading an HTML template file
+            and inserting the context variables."""
+            path, filename = os.path.split(template_path)
+            return jinja2.Environment(loader=jinja2.FileSystemLoader(path or
+                './')).get_template(filename).render(context)
+
+        context = {
+            'document_scores': document_scores
+        }
+        result = render('template.html', context)
+
+        with open(path, 'w+') as f:
+            f.write(result)
+
+        print('\nVisualization rendered at %s\n' % path)
 
     @staticmethod
     def extract_date(d, part, date_format='%Y-%m-%d'):
@@ -234,6 +252,6 @@ if __name__ == '__main__':
     dts = ['2018-01-01', '2018-01-02', '2018-02-01']
 
     scorer = TempoTFIDF()
-    x = scorer.score_documents(docs, dts,time_unit='week')
-    print(x)
-    
+    doc_scores = scorer.score_documents(docs, dts,time_unit='week')
+    print(doc_scores)
+    scorer.visualize(doc_scores)
