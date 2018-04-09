@@ -6,12 +6,14 @@ with some date.
 
 TODO
 ----
-- add score / max(score) to generate_from_frequencies()
 - make original algorithm an option
-- word: font_size output of generate_font_sizes needs to be a tuple in
-  descending order to be output correctly in the template
+- clean up visualization HTML/CSS
+- Add tooltip for each word with score?
 - singularize and stem functions in process_words()?
-- Double check documentation
+- experiment with more/different stop words list?
+- Rewrite documentation
+- Test on other kinds of documents
+- Add CLI to bottom
 
 """
 
@@ -220,11 +222,13 @@ class TempoTFIDF(object):
             for token in v:
                 f_w_t = v[token]
                 if_w = 1 + math.log( N / (float(collection_frequencies[token]) + 1))
-                # ORIGINAL
-                #if_w = math.log ( 1 / float(collection_frequencies[token]) )
                 s = math.pow(f_w_t, 0.5) * if_w
-                s_norm = s / doc_max
-                document_scores[token] = s_norm
+                s = s / doc_max
+                ## ORIGINAL
+                #if_w = math.log ( 1 / float(collection_frequencies[token]) )
+                #s = f_w_t * if_w
+                
+                document_scores[token] = s
             documents_scores[k] = document_scores
 
         self.documents_scores = documents_scores
@@ -297,7 +301,7 @@ class TempoTFIDF(object):
                 rs = .5
 
                 #font_size = int(round((rs * (score / float(last_freq)) + (1 - rs)) * font_size))
-                font_size = int(font_size * ( score / float(last_freq) ))
+                font_size = int(font_size * ( score / float(last_freq) )) - 1
                 last_freq = score
                 document_font_sizes.append((word, font_size))
 
