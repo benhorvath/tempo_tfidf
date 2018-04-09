@@ -22,8 +22,10 @@
 
     {% for date, scores in score_font_sizes.items() %}
       <h2>{{ date }}</h2>
-      {% for word, score in scores.items() %}
-        <p style='font-size:{{score}}px;'>{{ word }}</p>
+      {% for word, score in scores %}
+        {% if score >= 11 %}
+          <p style='font-size:{{score}}px;'>{{ word }}</p>
+        {% endif %}
       {% endfor %}
       <p></p>
     {% endfor %}

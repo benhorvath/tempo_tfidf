@@ -198,6 +198,9 @@ class TempoTFIDF(object):
             {'February 2015': {'taste': 5.980538, 'better': 3.3423432},
              'March 2015': {'wrong': 4.343234, 'two': 1.34234234}}
         """
+        def max_dict_value(d):
+            return max([v for k,v in d.items()])
+
         documents_scores = {}
 
         # ORIGINAL
@@ -212,6 +215,7 @@ class TempoTFIDF(object):
 
         N = len(document_frequencies.keys())
         for k,v in document_frequencies.items():
+            doc_max = max_dict_value(v)
             document_scores = dict()
             for token in v:
                 f_w_t = v[token]
@@ -219,10 +223,9 @@ class TempoTFIDF(object):
                 # ORIGINAL
                 #if_w = math.log ( 1 / float(collection_frequencies[token]) )
                 s = math.pow(f_w_t, 0.5) * if_w
-                document_scores[token] = s
+                s_norm = s / doc_max
+                document_scores[token] = s_norm
             documents_scores[k] = document_scores
-
-        # TODO score / max(score) to normalize
 
         self.documents_scores = documents_scores
         return documents_scores
@@ -276,25 +279,27 @@ class TempoTFIDF(object):
         #     d.append((word, freq, font_sized))
         #     print(word, font_size)
 
+        def sort_dict_value(d, descending=False):
+            return sorted(d.items(), key=lambda x: x[1], reverse=descending)
+
         documents_font_sizes = {}
         for date, scores in document_scores.items():
             last_freq = 1.
             max_font_size = 100
             font_size = max_font_size
-            document_font_sizes = {}
+            document_font_sizes = []
 
-            # Sort by score
-            scores = sorted(scores.items(), key=lambda x: x[1], reverse=True)
-            print(scores)
+            scores = sort_dict_value(scores, descending=True)
 
             for word, score in scores:
                 # if last_freq == 0.0:
                 #     last_freq = 1.0
                 rs = .5
 
-                font_size = int(round((rs * (score / float(last_freq)) + (1 - rs)) * font_size))
+                #font_size = int(round((rs * (score / float(last_freq)) + (1 - rs)) * font_size))
+                font_size = int(font_size * ( score / float(last_freq) ))
                 last_freq = score
-                document_font_sizes[word] = font_size
+                document_font_sizes.append((word, font_size))
 
             documents_font_sizes[date] = document_font_sizes
         return documents_font_sizes
@@ -328,17 +333,14 @@ if __name__ == '__main__':
     # print(doc_scores)
     # scorer.visualize(doc_scores)
 
-import pandas as pd
+    import pandas as pd
 
-df = pd.read_csv('ken_lay_emails.csv')
-docs = df['message'].tolist()
+    df = pd.read_csv('ken_lay_emails.csv')
+    docs = df['message'].tolist()
     dates = df['date'].tolist()
 
     scorer = TempoTFIDF()
 
-
-
     doc_scores = scorer.score_documents(docs, dates, time_unit='month')
-
-
+    font_sizes = scorer.generate_font_sizes(doc_scores)
     scorer.visualize(doc_scores)
