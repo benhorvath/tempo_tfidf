@@ -6,6 +6,7 @@ with some date.
 
 TODO
 ----
+- PROBLEM: Run with time_unit='week': Font-sizes are giant!
 - make original algorithm an option
 - clean up visualization HTML/CSS
 - Add tooltip for each word with score?
@@ -345,6 +346,6 @@ if __name__ == '__main__':
 
     scorer = TempoTFIDF()
 
-    doc_scores = scorer.score_documents(docs, dates, time_unit='month')
+    doc_scores = scorer.score_documents(docs, dates, time_unit='week')
     font_sizes = scorer.generate_font_sizes(doc_scores)
     scorer.visualize(doc_scores)
