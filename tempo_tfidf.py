@@ -258,7 +258,11 @@ class TempoTFIDF(object):
         print('\nVisualization rendered at %s\n' % path)
 
     def generate_font_sizes(self, document_scores):
-        """
+        """ Exact:
+
+        fontsize^* = fontsize_{t-1} * \left ( rs * \frac{freq_{w,t}}{freq_{w,t-1}} + ( 1 - rs) \right )
+
+        which is approximately fontsize^* = fontsize_{t-1} * delta frequency
         """
         # d = []
         # for word, freq in frequencies.items():
@@ -324,10 +328,10 @@ if __name__ == '__main__':
     # print(doc_scores)
     # scorer.visualize(doc_scores)
 
-    import pandas as pd
+import pandas as pd
 
-    df = pd.read_csv('ken_lay_emails.csv')
-    docs = df['message'].tolist()
+df = pd.read_csv('ken_lay_emails.csv')
+docs = df['message'].tolist()
     dates = df['date'].tolist()
 
     scorer = TempoTFIDF()
