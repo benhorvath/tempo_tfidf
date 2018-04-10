@@ -7,6 +7,8 @@ with some date.
 TODO
 ----
 - PROBLEM: Run with time_unit='week': Font-sizes are giant!
+- Remove tokens that occur twice or less in entire doc collection
+- Ensure order of dict dates: April 2001, January 2002, etc.
 - make original algorithm an option
 - clean up visualization HTML/CSS
 - Add tooltip for each word with score?
@@ -218,18 +220,21 @@ class TempoTFIDF(object):
 
         N = len(document_frequencies.keys())
         for k,v in document_frequencies.items():
-            doc_max = max_dict_value(v)
             document_scores = dict()
             for token in v:
                 f_w_t = v[token]
                 if_w = 1 + math.log( N / (float(collection_frequencies[token]) + 1))
                 s = math.pow(f_w_t, 0.5) * if_w
-                s = s / doc_max
                 ## ORIGINAL
                 #if_w = math.log ( 1 / float(collection_frequencies[token]) )
                 #s = f_w_t * if_w
-                
+
                 document_scores[token] = s
+
+            # Normalize scores to [0, 1]
+            score_max = max_dict_value(document_scores)
+            document_scores = {k: v / float(score_max) for k,v in document_scores.items()}
+
             documents_scores[k] = document_scores
 
         self.documents_scores = documents_scores
@@ -272,17 +277,6 @@ class TempoTFIDF(object):
 
         which is approximately fontsize^* = fontsize_{t-1} * delta frequency
         """
-        # d = []
-        # for word, freq in frequencies.items():
-        #     rs = .5  # relative scaling? default is .5 -- exactly balanced between
-        #              # word rank and word frequency
-        #     if last_freq == 0:
-        #         last_freq = 1
-
-        #     font_size = int(round((rs * (freq / float(last_freq)) + (1 - rs)) * font_size))
-        #     last_freq = freq
-        #     d.append((word, freq, font_sized))
-        #     print(word, font_size)
 
         def sort_dict_value(d, descending=False):
             return sorted(d.items(), key=lambda x: x[1], reverse=descending)
@@ -297,11 +291,9 @@ class TempoTFIDF(object):
             scores = sort_dict_value(scores, descending=True)
 
             for word, score in scores:
-                # if last_freq == 0.0:
-                #     last_freq = 1.0
                 rs = .5
-
-                #font_size = int(round((rs * (score / float(last_freq)) + (1 - rs)) * font_size))
+                if font_size < 1:
+                    font_size = 1
                 font_size = int(font_size * ( score / float(last_freq) )) - 1
                 last_freq = score
                 document_font_sizes.append((word, font_size))
