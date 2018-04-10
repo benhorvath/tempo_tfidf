@@ -6,7 +6,6 @@ with some date.
 
 TODO
 ----
-- singularize and stem functions in process_words()?
 - experiment with more/different stop words list?
 - Remove tokens that occur twice or less in entire doc collection
 - Ensure order of dict dates: April 2001, January 2002, etc.
@@ -28,6 +27,7 @@ import os
 import re
 
 import jinja2
+import pattern.en
 
 FILE = os.path.dirname(__file__)
 STOPWORDS = set([w.strip() for w in open(os.path.join(FILE,
@@ -147,6 +147,7 @@ class TempoTFIDF(object):
         words = [w.lower() for w in words if w.lower() not in stopwords]
         words = [w[:2] if w.endswith("'s") else w for w in words]
         words = [w for w in words if not w.isdigit()]
+        words = [pattern.en.singularize(w) for w in words]
         if self.collocations:
             words = zip(words, words[1:])
         return words
