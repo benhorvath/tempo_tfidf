@@ -6,17 +6,18 @@ with some date.
 
 TODO
 ----
-- PROBLEM: Run with time_unit='week': Font-sizes are giant!
+- singularize and stem functions in process_words()?
+- experiment with more/different stop words list?
 - Remove tokens that occur twice or less in entire doc collection
 - Ensure order of dict dates: April 2001, January 2002, etc.
 - make original algorithm an option
+- Allow larger collection of documents option, greater than sum of documents
+  we're interested in
 - clean up visualization HTML/CSS
 - Add tooltip for each word with score?
-- singularize and stem functions in process_words()?
-- experiment with more/different stop words list?
-- Rewrite documentation
 - Test on other kinds of documents
 - Add CLI to bottom
+- Rewrite documentation -- consider light refactoring
 
 """
 
