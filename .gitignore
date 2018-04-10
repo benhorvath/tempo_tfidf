@@ -2,4 +2,5 @@
 visualize.html
 *.csv
 *.R
+*.Rhistory
 *.pyc

@@ -6,17 +6,16 @@ with some date.
 
 TODO
 ----
+- Add tooltip for each word with score?
+- Add CLI to bottom of this script
 - handle text encodings better
-- Remove tokens that occur twice or less in entire doc collection
-- Ensure order of dict dates: April 2001, January 2002, etc.
-- make original algorithm an option
+- Add min tokens parameter, default = 3
+- Ensure order of dict dat"poaes: April 2001, January 2002, etc.
+- Make original algorithm an option
 - Allow larger collection of documents option, greater than sum of documents
   we're interested in
-- clean up visualization HTML/CSS
-- Add tooltip for each word with score?
 - Test on other kinds of documents
-- Add CLI to bottom
-- Rewrite documentation -- consider light refactoring
+- Rewrite documentation -- consider refactoring
 
 """
 
