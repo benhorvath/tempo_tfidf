@@ -6,7 +6,7 @@ with some date.
 
 TODO
 ----
-- experiment with more/different stop words list?
+- handle text encodings better
 - Remove tokens that occur twice or less in entire doc collection
 - Ensure order of dict dates: April 2001, January 2002, etc.
 - make original algorithm an option
@@ -275,7 +275,7 @@ class TempoTFIDF(object):
     def generate_font_sizes(self, document_scores):
         """ Exact:
 
-        fontsize^* = fontsize_{t-1} * \left ( rs * \frac{freq_{w,t}}{freq_{w,t-1}} + ( 1 - rs) \right )
+        fontsize_{w_{i}} =  fontsize_{w_{i-1}} \times \frac{s\cdot core_{w_{i}}}{score_{w_{i-1}}} - 1
 
         which is approximately fontsize^* = fontsize_{t-1} * delta frequency
         """
