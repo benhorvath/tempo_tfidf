@@ -1,6 +1,7 @@
 *.swp
 visualize.html
 *.csv
+*.tsv
 *.R
 *.Rhistory
 *.pyc

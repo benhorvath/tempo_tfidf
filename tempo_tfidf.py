@@ -9,24 +9,25 @@ TODO
 - Add tooltip for each word with score?
 - Add CLI to bottom of this script
 - handle text encodings better
-- Add min tokens parameter, default = 3
-- Ensure order of dict dat"poaes: April 2001, January 2002, etc.
-- Make original algorithm an option
-- Allow larger collection of documents option, greater than sum of documents
-  we're interested in
+- Delete URLs, @twitters, emails with process_text()
 - Test on other kinds of documents
 - Rewrite documentation -- consider refactoring
 
 """
 
 from collections import Counter
+import csv
 from datetime import datetime
 import math
 import os
 import re
+import sys
 
 import jinja2
-import pattern.en
+
+# pattern is not yet compatible with Python 3
+if sys.version_info < (3, 0):
+    import pattern.en
 
 FILE = os.path.dirname(__file__)
 STOPWORDS = set([w.strip() for w in open(os.path.join(FILE,
@@ -105,14 +106,6 @@ class TempoTFIDF(object):
         doc_tokens = {k: self.process_text(v) for k,v in time_docs.items()}
         doc_freqs = {k: self.calculate_word_frequencies(v) for k,v in doc_tokens.items()}
 
-        # ORIGINAL
-        # Calculate document collection frequencies
-        # collection_tokens = []
-        # for k,v in doc_tokens.items():
-        #     for i in v:
-        #         collection_tokens.append(i)
-        # collection_freqs = self.calculate_word_frequencies(collection_tokens)
-
         # Calculate n_d - number of documents a term appears in
         n_i = {}
         for k, v in doc_freqs.items():
@@ -121,7 +114,6 @@ class TempoTFIDF(object):
                     n_i[word] = 1
                 else:
                     n_i[word] += 1
-
         return self.generate_from_frequencies(doc_freqs, n_i, aggr_dates)
 
     def process_text(self, document):
@@ -146,7 +138,8 @@ class TempoTFIDF(object):
         words = [w.lower() for w in words if w.lower() not in stopwords]
         words = [w[:2] if w.endswith("'s") else w for w in words]
         words = [w for w in words if not w.isdigit()]
-        words = [pattern.en.singularize(w) for w in words]
+        if sys.version_info < (3, 0):
+            words = [pattern.en.singularize(w) for w in words]
         if self.collocations:
             words = zip(words, words[1:])
         return words
@@ -209,16 +202,6 @@ class TempoTFIDF(object):
 
         documents_scores = {}
 
-        # ORIGINAL
-        # for k,v in document_frequencies.items():
-        #     document_scores = dict()
-        #     for token in v:
-        #         f_w_t = v[token]
-        #         if_w = math.log ( 1 / float(collection_frequencies[token]) )
-        #         s = f_w_t * if_w
-        #         document_scores[token] = s
-        #     documents_scores[k] = document_scores
-
         N = len(document_frequencies.keys())
         for k,v in document_frequencies.items():
             document_scores = dict()
@@ -226,19 +209,13 @@ class TempoTFIDF(object):
                 f_w_t = v[token]
                 if_w = 1 + math.log( N / (float(collection_frequencies[token]) + 1))
                 s = math.pow(f_w_t, 0.5) * if_w
-                ## ORIGINAL
-                #if_w = math.log ( 1 / float(collection_frequencies[token]) )
-                #s = f_w_t * if_w
-
                 document_scores[token] = s
 
             # Normalize scores to [0, 1]
             score_max = max_dict_value(document_scores)
             document_scores = {k: v / float(score_max) for k,v in document_scores.items()}
-
             documents_scores[k] = document_scores
 
-        self.documents_scores = documents_scores
         return documents_scores
 
     def visualize(self, document_scores, path='visualize.html'):
@@ -269,7 +246,7 @@ class TempoTFIDF(object):
         with open(path, 'w+') as f:
             f.write(result)
 
-        print('\nVisualization rendered at %s\n' % path)
+        print('Visualization rendered at %s\n' % path)
 
     def generate_font_sizes(self, document_scores):
         """ Exact:
@@ -292,7 +269,6 @@ class TempoTFIDF(object):
             scores = sort_dict_value(scores, descending=True)
 
             for word, score in scores:
-                rs = .5
                 if font_size < 1:
                     font_size = 1
                 font_size = int(font_size * ( score / float(last_freq) )) - 1
@@ -320,25 +296,19 @@ class TempoTFIDF(object):
 
 if __name__ == '__main__':
 
+    # import pandas as pd
 
-    # docs = ['While troubleshooting HIVE performance issues when TEZ engine is being used there may be a need to increase the number of mappers used during a query.', 'In Monday\'s damp predawn darkness, teachers gathered in front of Muskogee High. But instead of heading to their classrooms, they piled on to a bus painted with the schoo\'s mascot the Roughers and headed 150 miles west to Oklahoma City.', "Tip 1: Partitioning Hive Tables Hive is a powerful tool to perform queries on large data sets and it is particularly good at queries that require full table scans. Yet many queries run on Hive have filtering where clauses limiting the data to be retrieved and processed, e.g. SELECT * WHERE . Hive users tend to have or develop a domain knowledge, understand the data they work with and the queries commonly executed or scheduled. With this knowledge we can identify common data structures that surface in queries. This enables us to identify columns with a (relatively) low cardinality like geographies or dates and high relevance to key queries. For example, common approaches to slice the airline data may be by origin state for reporting purposes. We can utilize this knowledge to organise our data by this information and tell Hive about it. Hive can utilize this knowledge to exclude data from queries before even reading it. Hive tables are linked to directories on HDFS or S3 with files in them interpreted by the meta data stored with Hive. Without partitioning Hive reads all the data in the directory and applies the query filters on it. This is slow and expensive since all data has to be read. In our example a common reports and queries might be generated on an origin state basis. This enables us to define at creation time of the table the state column to be a partition. Consequently, when we write data to the table the data will be written in sub-directories named by state (abbreviations). Subsequently, queries filtering by origin state, e.g. allow Hive to skip all but the relevant sub-directories and data files. This can lead to tremendous reduction in data required to read and "]
-
-
-    # dts = ['2018-01-01', '2018-01-02', '2018-02-01']
+    # df = pd.read_csv('ken_lay_emails.csv')
+    # docs = df['message'].tolist()
+    # dates = df['date'].tolist()
 
     # scorer = TempoTFIDF()
-    # doc_scores = scorer.score_documents(docs, dts,time_unit='week')
-    # print(doc_scores)
+
+    # doc_scores = scorer.score_documents(docs, dates, time_unit='month')
+    # font_sizes = scorer.generate_font_sizes(doc_scores)
     # scorer.visualize(doc_scores)
 
-    import pandas as pd
 
-    df = pd.read_csv('ken_lay_emails.csv')
-    docs = df['message'].tolist()
-    dates = df['date'].tolist()
 
-    scorer = TempoTFIDF()
 
-    doc_scores = scorer.score_documents(docs, dates, time_unit='week')
-    font_sizes = scorer.generate_font_sizes(doc_scores)
-    scorer.visualize(doc_scores)
+
