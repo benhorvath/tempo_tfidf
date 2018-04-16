@@ -47,3 +47,5 @@ As usual, w's score in time t is:
 ## References
 
 Viegas, Fernanda B., Scott Golder, and Judith Donath. "Visualizing Email Content: Portraying Relationships from Conversational Histories." _Proceedings of ACM CHI_, April 2006.
+
+Manning, Christopher D., Prabhakar Raghavan, and Hinrich Schütze. _Introduction to Information Retrieval_. Cambridge UP: 2008. Ch. 6, but esp. p. 128.
