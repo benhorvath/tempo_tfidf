@@ -1,5 +1,7 @@
 # Temporal TF-IDF Term-Document Scores
+
 Provides a Python class to easily calculate the TF-IDF scores of a collection of documents produced over time. The class can also create an HTML page visualizing how documents' topics vary over time.
+
 
 ## Example
 
@@ -17,6 +19,30 @@ scorer = TempoTFIDF()
 doc_scores = scorer.score_documents(docs, dates, time_unit='month')
 scorer.visualize(doc_scores, path='visualize.html')
 ```
+
+## Requirements
+
+Scoring functionality requires only packages available in most base Python installs. However, jinja2 is required for the HTML visualization. The Pattern package -- only available for Python 2.x -- allows for additional text cleaning, potentially improving the output.
+
+See requirements.txt for complete details.
+
+
+## TF-IDF Calculation
+
+This package uses a modified version of the standard TF-IDF equation.
+
+Term frequency is the raw count of word w in time unit t:
+
+    f_w,t = count(f_t)
+
+Inverse document frequency is defined as one plus the log of the number of time units N divided by the number of time units w appears plus one:
+
+    if_w = 1 + log( (N / (count(w_T) + 1)) )
+
+As usual, w's score in time t is:
+
+    TFIDF_w,t = f_w,t * if_w
+
 
 ## References
 

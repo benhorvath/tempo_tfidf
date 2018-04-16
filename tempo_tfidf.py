@@ -7,9 +7,7 @@ message and the other containing an associated date.
 
 TODO
 ----
-- Required doc
-- Test on other kinds of documents
-- Rewrite documentation -- consider refactoring
+- Test various kinds of documents and make small adjustments as necessary
 
 """
 
